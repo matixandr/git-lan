@@ -18,8 +18,8 @@ fn main() {
         rarities.insert("♣", 0.001);
         rarities.insert("♦", 0.0005);
         rarities.insert("♥", 0.0001);
-        rarities.insert("♠", 0.0000005);
-        rarities.insert("✪", 0.0000001);
+        rarities.insert("♠", 0.00005);
+        rarities.insert("✪", 0.00001);
     }
     println!("\n\nStaring rarity roller...");
     let start_time = Instant::now();
