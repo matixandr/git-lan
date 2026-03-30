@@ -7,11 +7,42 @@ import (
 	"time"
 )
 
-// runHandshake drives both ends of a handshake over a net.Pipe and returns the
-// initiator's and responder's negotiated keys.
+// loopback returns a connected pair of TCP sockets on the loopback interface.
+// Unlike net.Pipe these are buffered, matching the real transport: the
+// handshake writes both public keys before either side reads.
+func loopback(t *testing.T) (net.Conn, net.Conn) {
+	t.Helper()
+	ln, err := net.Listen("tcp", "127.0.0.1:0")
+	if err != nil {
+		t.Fatalf("listen: %v", err)
+	}
+	defer ln.Close()
+
+	type ar struct {
+		c   net.Conn
+		err error
+	}
+	acceptCh := make(chan ar, 1)
+	go func() {
+		c, err := ln.Accept()
+		acceptCh <- ar{c, err}
+	}()
+	dialed, err := net.Dial("tcp", ln.Addr().String())
+	if err != nil {
+		t.Fatalf("dial: %v", err)
+	}
+	got := <-acceptCh
+	if got.err != nil {
+		t.Fatalf("accept: %v", got.err)
+	}
+	return dialed, got.c
+}
+
+// runHandshake drives both ends of a handshake over a loopback socket and
+// returns the initiator's and responder's negotiated keys.
 func runHandshake(t *testing.T) (a, b *sessionKeys) {
 	t.Helper()
-	c1, c2 := net.Pipe()
+	c1, c2 := loopback(t)
 	defer c1.Close()
 	defer c2.Close()
 
