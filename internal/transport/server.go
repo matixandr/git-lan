@@ -111,7 +111,8 @@ func (s *Server) handle(conn net.Conn) {
 
 // serveGit runs a one-shot git daemon whose I/O is the decrypted connection.
 func (s *Server) serveGit(ec io.ReadWriter) error {
-	parent := filepath.Dir(s.repoRoot)
+	// git daemon wants forward slashes for base-path/whitelist even on Windows.
+	parent := filepath.ToSlash(filepath.Dir(s.repoRoot))
 	args := []string{
 		"daemon", "--inetd", "--export-all",
 		"--base-path=" + parent,
@@ -121,7 +122,7 @@ func (s *Server) serveGit(ec io.ReadWriter) error {
 	}
 	// Whitelist exactly this repo directory so siblings under the parent are
 	// never exposed, even with --export-all.
-	args = append(args, s.repoRoot)
+	args = append(args, filepath.ToSlash(s.repoRoot))
 
 	cmd := exec.Command("git", args...)
 	cmd.Stdin = ec
