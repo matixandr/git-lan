@@ -136,6 +136,22 @@ func (s *Server) serveGit(ec io.ReadWriter) error {
 	return nil
 }
 
+// Shutdown closes the listener and kills any in-flight git daemon subprocesses.
+// Safe to call once after Serve; pairs with cancelling the Serve context.
+func (s *Server) Shutdown() {
+	if s.ln != nil {
+		_ = s.ln.Close()
+	}
+	s.mu.Lock()
+	for cmd := range s.subs {
+		if cmd.Process != nil {
+			_ = cmd.Process.Kill()
+		}
+	}
+	s.subs = make(map[*exec.Cmd]struct{})
+	s.mu.Unlock()
+}
+
 func (s *Server) track(cmd *exec.Cmd) {
 	s.mu.Lock()
 	s.subs[cmd] = struct{}{}
