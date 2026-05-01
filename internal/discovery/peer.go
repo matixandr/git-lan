@@ -82,3 +82,8 @@ func (p Peer) preferredIP() net.IP {
 func (p Peer) Name() string {
 	return p.Instance
 }
+
+// Presence returns the peer's live presence relative to the current time.
+func (p Peer) Presence() Presence {
+	return presenceAt(p, time.Now())
+}

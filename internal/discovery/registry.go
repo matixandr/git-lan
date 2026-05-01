@@ -70,13 +70,16 @@ func (r *Registry) List() []Peer {
 	return out
 }
 
-// PresenceOf derives the live presence of a peer. Reachability is decided
-// locally from LastSeen (a peer past PeerTTL is offline regardless of what it
-// last claimed). Everything else - coding vs idle vs online - is self-reported
-// by the peer, which alone knows its own activity. We fall back to deriving
-// "coding" from the modified-file count if the peer advertised nothing.
-func (r *Registry) PresenceOf(p Peer) Presence {
-	if r.now().Sub(p.LastSeen) > PeerTTL {
+// PresenceOf derives the live presence of a peer using the registry's clock.
+func (r *Registry) PresenceOf(p Peer) Presence { return presenceAt(p, r.now()) }
+
+// presenceAt is the shared presence rule. Reachability is decided locally from
+// LastSeen (a peer past PeerTTL is offline regardless of what it last claimed).
+// Everything else - coding vs idle vs online - is self-reported by the peer,
+// which alone knows its own activity. We fall back to deriving "coding" from the
+// modified-file count if the peer advertised nothing.
+func presenceAt(p Peer, now time.Time) Presence {
+	if now.Sub(p.LastSeen) > PeerTTL {
 		return PresenceOffline
 	}
 	switch p.Advertised {
