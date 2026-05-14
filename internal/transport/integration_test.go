@@ -105,3 +105,70 @@ func TestEndToEndClone(t *testing.T) {
 		t.Fatalf("content mismatch: %q", got)
 	}
 }
+
+// makeRepo builds a one-commit repo and returns its path.
+func makeRepo(t *testing.T) string {
+	t.Helper()
+	parent := t.TempDir()
+	src := filepath.Join(parent, "demo")
+	if err := os.Mkdir(src, 0o755); err != nil {
+		t.Fatal(err)
+	}
+	git(t, src, "init", "-q", "-b", "main")
+	if err := os.WriteFile(filepath.Join(src, "f.txt"), []byte("data"), 0o644); err != nil {
+		t.Fatal(err)
+	}
+	git(t, src, "add", ".")
+	git(t, src, "commit", "-q", "-m", "c")
+	return src
+}
+
+// TestPasswordGateClone confirms the password gate admits a correct seed and
+// rejects a wrong one through the full clone path.
+func TestPasswordGateClone(t *testing.T) {
+	if _, err := exec.LookPath("git"); err != nil {
+		t.Skip("git not in PATH")
+	}
+	src := makeRepo(t)
+
+	salt := []byte("0123456789abcdef")
+	seed := []byte("shared-32-byte-session-seed-value")
+
+	srv := NewServer(mustID(t), src, false)
+	srv.RequireAuth = true
+	srv.Salt = salt
+	srv.Seed = seed
+	if err := srv.Listen(0); err != nil {
+		t.Fatal(err)
+	}
+	ctx, cancel := context.WithCancel(context.Background())
+	defer cancel()
+	go func() { _ = srv.Serve(ctx) }()
+
+	tryClone := func(derive func([]byte) []byte) error {
+		cli := &Client{Identity: mustID(t), PeerAddr: srv.ln.Addr().String(), DeriveSeed: derive}
+		url, stop, err := cli.Bridge(srv.RepoName())
+		if err != nil {
+			return err
+		}
+		defer stop()
+		dest := filepath.Join(t.TempDir(), "c")
+		cmd := exec.Command("git", "clone", "-q", url, dest)
+		cmd.Env = os.Environ()
+		done := make(chan error, 1)
+		go func() { _, e := cmd.CombinedOutput(); done <- e }()
+		select {
+		case e := <-done:
+			return e
+		case <-time.After(30 * time.Second):
+			return context.DeadlineExceeded
+		}
+	}
+
+	if err := tryClone(func([]byte) []byte { return seed }); err != nil {
+		t.Errorf("correct seed should clone, got %v", err)
+	}
+	if err := tryClone(func([]byte) []byte { return []byte("the-wrong-seed-entirely-nope-xx!") }); err == nil {
+		t.Error("wrong seed should fail the clone")
+	}
+}
