@@ -105,6 +105,18 @@ func (t *TrustRing) VerifyHost(hostname, fingerprint string) (trusted bool, err 
 	return true, nil
 }
 
+// FingerprintTrusted reports whether any pinned host uses this fingerprint,
+// returning the hostname when so. Used by the inbound approval path, which sees
+// a peer's identity but not always a reliable hostname.
+func (t *TrustRing) FingerprintTrusted(fingerprint string) (string, bool) {
+	for host, e := range t.Entries {
+		if ConstantTimeEqual([]byte(e.Fingerprint), []byte(fingerprint)) {
+			return host, true
+		}
+	}
+	return "", false
+}
+
 // List returns all pins sorted by hostname.
 func (t *TrustRing) List() []TrustEntry {
 	out := make([]TrustEntry, 0, len(t.Entries))
