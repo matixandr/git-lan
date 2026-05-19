@@ -26,6 +26,15 @@ func approvePeer(out io.Writer) transport.VerifyFunc {
 	return func(peerID []byte) error {
 		fp := security.FingerprintOf(peerID)
 
+		// Auto-accept peers already in the trust ring - no prompt needed.
+		if ring, err := security.LoadTrust(); err == nil {
+			if host, ok := ring.FingerprintTrusted(fp); ok {
+				fmt.Fprintf(out, "%s peer %s (%s) is trusted - accepted.\n",
+					display.Icons.Success, host, fp)
+				return nil
+			}
+		}
+
 		approveMu.Lock()
 		defer approveMu.Unlock()
 
@@ -45,11 +54,28 @@ func approvePeer(out io.Writer) transport.VerifyFunc {
 		case "a", "accept":
 			return nil
 		case "t", "trust":
-			// Trust-ring persistence is added with the trust commands; for now
-			// trusting behaves like accepting for this connection.
+			persistTrust(out, fp)
 			return nil
 		default:
 			return fmt.Errorf("rejected by host")
 		}
 	}
+}
+
+// persistTrust pins a fingerprint after the host chose "trust always". The
+// inbound side has no reliable hostname, so we prompt for a label.
+func persistTrust(out io.Writer, fp string) {
+	fmt.Fprint(out, "  name this peer (for `trust list`): ")
+	reader := bufio.NewReader(os.Stdin)
+	line, _ := reader.ReadString('\n')
+	name := strings.TrimSpace(line)
+	if name == "" {
+		name = "peer-" + fp[len(fp)-6:]
+	}
+	ring, err := security.LoadTrust()
+	if err != nil {
+		return
+	}
+	ring.Add(name, fp)
+	_ = ring.Save()
 }
