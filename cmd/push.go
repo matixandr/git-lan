@@ -4,6 +4,8 @@ import (
 	"fmt"
 	"time"
 
+	"github.com/matixandr/git-lan/internal/conflict"
+	"github.com/matixandr/git-lan/internal/discovery"
 	"github.com/matixandr/git-lan/internal/display"
 	"github.com/matixandr/git-lan/internal/git"
 	"github.com/spf13/cobra"
@@ -51,9 +53,23 @@ var pushCmd = &cobra.Command{
 	},
 }
 
-// warnOnConflicts is a placeholder hooked up fully by the conflict detector in
-// a later pass; for now it is a no-op seam so push has a stable call site.
-func warnOnConflicts(cmd *cobra.Command, repo *git.Repo, peer interface{}) {}
+// warnOnConflicts prints an early warning if both sides have uncommitted work.
+func warnOnConflicts(cmd *cobra.Command, repo *git.Repo, peer discovery.Peer) {
+	localDirty, err := repo.ModifiedFiles()
+	if err != nil {
+		return
+	}
+	report := conflict.Detect(peer.Instance, localDirty, nil, peer.Modified)
+	if !report.Risky() {
+		return
+	}
+	out := cmd.OutOrStdout()
+	th := display.Active
+	fmt.Fprintf(out, "%s possible conflict\n", th.Warning.Render(display.Icons.Warning))
+	for _, line := range report.Lines() {
+		fmt.Fprintf(out, "  %s\n", th.Warning.Render(line))
+	}
+}
 
 func init() {
 	rootCmd.AddCommand(pushCmd)
