@@ -12,6 +12,7 @@ import (
 	"github.com/matixandr/git-lan/internal/discovery"
 	"github.com/matixandr/git-lan/internal/display"
 	"github.com/matixandr/git-lan/internal/git"
+	"github.com/matixandr/git-lan/internal/presence"
 	"github.com/matixandr/git-lan/internal/security"
 	"github.com/matixandr/git-lan/internal/session"
 	"github.com/matixandr/git-lan/internal/transport"
@@ -91,8 +92,16 @@ func runSessionCreate(cmd *cobra.Command) error {
 	go func() { _ = srv.Serve(ctx) }()
 	defer srv.Shutdown()
 
+	// Watch the working tree so presence reflects live editing.
+	var watcher *git.Watcher
+	if w, werr := git.NewWatcher(repo.Root); werr == nil {
+		watcher = w
+		watcher.Start(ctx)
+		defer watcher.Close()
+	}
+
 	// mDNS announce + browse.
-	ad := advertisementFor(repo, name, sess.HasPassword())
+	ad := advertisementFor(repo, name, sess.HasPassword(), watcher)
 	svc, err := discovery.Start(ctx, srv.Port(), &ad)
 	if err != nil {
 		return err
@@ -100,14 +109,14 @@ func runSessionCreate(cmd *cobra.Command) error {
 	defer svc.Stop()
 
 	printSessionBanner(out, sess, id, srv.Port())
-	heartbeat(ctx, svc, repo, name, sess.HasPassword())
+	heartbeat(ctx, svc, repo, name, sess.HasPassword(), watcher)
 	fmt.Fprintln(out, "\nsession ended.")
 	return nil
 }
 
 // heartbeat refreshes the advertised metadata so peers see live branch, HEAD,
 // modified-file count, and presence until the context is canceled.
-func heartbeat(ctx context.Context, svc *discovery.Service, repo *git.Repo, name string, locked bool) {
+func heartbeat(ctx context.Context, svc *discovery.Service, repo *git.Repo, name string, locked bool, watcher *git.Watcher) {
 	t := time.NewTicker(20 * time.Second)
 	defer t.Stop()
 	for {
@@ -115,17 +124,24 @@ func heartbeat(ctx context.Context, svc *discovery.Service, repo *git.Repo, name
 		case <-ctx.Done():
 			return
 		case <-t.C:
-			svc.UpdateAdvertisement(advertisementFor(repo, name, locked))
+			svc.UpdateAdvertisement(advertisementFor(repo, name, locked, watcher))
 		}
 	}
 }
 
-func advertisementFor(repo *git.Repo, name string, locked bool) discovery.Advertisement {
+func advertisementFor(repo *git.Repo, name string, locked bool, watcher *git.Watcher) discovery.Advertisement {
 	branch, _ := repo.Branch()
-	presence := discovery.PresenceOnline
-	if !repo.IsClean() {
-		presence = discovery.PresenceCoding
+	dirty := !repo.IsClean()
+
+	// Presence reflects live editing when a watcher is available, otherwise a
+	// coarse clean/dirty split.
+	pres := discovery.PresenceOnline
+	if watcher != nil {
+		pres = presence.Compute(dirty, watcher.LastActivity(), time.Now())
+	} else if dirty {
+		pres = discovery.PresenceCoding
 	}
+
 	return discovery.Advertisement{
 		Repo:     repo.Name(),
 		Branch:   branch,
@@ -133,7 +149,7 @@ func advertisementFor(repo *git.Repo, name string, locked bool) discovery.Advert
 		Modified: repo.ModifiedCount(),
 		Session:  name,
 		Locked:   locked,
-		Presence: presence,
+		Presence: pres,
 	}
 }
 
