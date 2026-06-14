@@ -13,10 +13,10 @@ import (
 // by its modified-file count; when the peer also shares filenames (same LAN,
 // same repo), the overlap set is reported precisely.
 type Report struct {
-	LocalDirty    []string // files we are about to push that are dirty locally
-	PeerModified  int      // count of files the peer reports as modified
-	Overlap       []string // filenames dirty on both sides, when known
-	PeerName      string
+	LocalDirty   []string // files we are about to push that are dirty locally
+	PeerModified int      // count of files the peer reports as modified
+	Overlap      []string // filenames dirty on both sides, when known
+	PeerName     string
 }
 
 // Risky reports whether the push warrants a warning.

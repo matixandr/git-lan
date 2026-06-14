@@ -120,4 +120,3 @@ func toLower(s string) string {
 	}
 	return string(b)
 }
-

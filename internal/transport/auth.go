@@ -45,8 +45,8 @@ type InviteValidator func(token string) error
 type ServerGateConfig struct {
 	RequireAuth bool
 	Salt        []byte
-	Seed        []byte           // password seed; may be nil if only invites
-	Invite      InviteValidator  // may be nil if invites are not accepted
+	Seed        []byte          // password seed; may be nil if only invites
+	Invite      InviteValidator // may be nil if invites are not accepted
 }
 
 // ServerGate runs the server side of the access gate over the encrypted
