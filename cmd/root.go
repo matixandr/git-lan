@@ -44,6 +44,11 @@ func Execute() error {
 }
 
 func init() {
+	// Report as "git-lan", the binary name, rather than the "lan" subcommand.
+	rootCmd.SetVersionTemplate("git-lan version {{.Version}}\n")
+}
+
+func init() {
 	pf := rootCmd.PersistentFlags()
 	pf.BoolVar(&flagNoNerdFonts, "no-nerd-fonts", false, "force plain icons, skip Nerd Fonts detection")
 	pf.BoolVar(&flagNoColor, "no-color", false, "disable colored output")
