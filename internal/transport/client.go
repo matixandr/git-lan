@@ -17,6 +17,9 @@ type Client struct {
 
 	// Verify checks the peer identity after each handshake; nil = TOFU.
 	Verify VerifyFunc
+	// DeriveSeed turns a session salt into the password seed for the gate. Nil
+	// when the user supplied no password; a locked session then fails cleanly.
+	DeriveSeed func(salt []byte) []byte
 	// Log receives diagnostics; may be nil.
 	Log func(format string, args ...any)
 }
@@ -82,6 +85,12 @@ func (c *Client) tunnel(gitConn net.Conn) {
 			_ = gitConn.Close()
 			return
 		}
+	}
+	if err := ClientGate(ec, c.DeriveSeed); err != nil {
+		c.logf("session auth failed: %v", err)
+		_ = ec.Close()
+		_ = gitConn.Close()
+		return
 	}
 
 	duplex(gitConn, ec)
