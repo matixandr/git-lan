@@ -6,6 +6,7 @@ import (
 	"io"
 	"os"
 	"os/signal"
+	"sync"
 	"time"
 
 	"github.com/matixandr/git-lan/internal/discovery"
@@ -67,6 +68,7 @@ func runSessionCreate(cmd *cobra.Command) error {
 		srv.RequireAuth = true
 		srv.Salt = sess.Salt
 		srv.Seed = session.DeriveSeed(flagSessionPassword, sess.Salt)
+		srv.Invite = inviteValidator(store)
 	}
 
 	cfg, _ := config.Load()
@@ -145,6 +147,29 @@ func printSessionBanner(out io.Writer, sess *session.Session, id *security.Ident
 	fmt.Fprintf(out, "  push:        %v\n", sess.AllowPush)
 	fmt.Fprintf(out, "  fingerprint: %s\n", th.Muted.Render(id.Fingerprint()))
 	fmt.Fprintln(out, th.Muted.Render("  Ctrl+C to stop. `git lan session invite` to mint a join token."))
+}
+
+// inviteValidator returns a transport.InviteValidator that verifies a token
+// against the active session secret and burns it on first use. Burning is
+// serialized and persisted so a token cannot be reused, even across restarts.
+func inviteValidator(store *session.Store) func(string) error {
+	var mu sync.Mutex
+	return func(token string) error {
+		mu.Lock()
+		defer mu.Unlock()
+		sess := store.Active
+		if sess == nil {
+			return fmt.Errorf("no active session")
+		}
+		id, err := session.ParseInvite(sess.Secret, token)
+		if err != nil {
+			return err
+		}
+		if !sess.Burn(id) {
+			return fmt.Errorf("invite already used")
+		}
+		return store.Save()
+	}
 }
 
 func clearActiveSession() {
