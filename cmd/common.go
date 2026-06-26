@@ -8,10 +8,8 @@ import (
 	"time"
 
 	"github.com/matixandr/git-lan/internal/discovery"
-	"github.com/matixandr/git-lan/internal/git"
 	"github.com/matixandr/git-lan/internal/security"
 	"github.com/matixandr/git-lan/internal/transport"
-	"github.com/matixandr/git-lan/pkg/config"
 )
 
 // resolvePeer parses a "peer/repo" reference, browses for the peer, and returns
@@ -123,34 +121,3 @@ func toLower(s string) string {
 	return string(b)
 }
 
-// localAdvertisement builds the TXT metadata for the repo in the current
-// directory, used when a command announces this host.
-func localAdvertisement(sessionName string, locked bool, presence discovery.Presence) (discovery.Advertisement, *git.Repo, error) {
-	repo, err := git.Open("")
-	if err != nil {
-		return discovery.Advertisement{}, nil, err
-	}
-	branch, _ := repo.Branch()
-	ad := discovery.Advertisement{
-		Repo:     repo.Name(),
-		Branch:   branch,
-		Head:     repo.Head(),
-		Modified: repo.ModifiedCount(),
-		Session:  sessionName,
-		Locked:   locked,
-		Presence: presence,
-	}
-	return ad, repo, nil
-}
-
-// displayName returns the configured display name, falling back to the hostname.
-func displayName() string {
-	cfg, _ := config.Load()
-	if cfg.DisplayName != "" {
-		return cfg.DisplayName
-	}
-	if h, err := os.Hostname(); err == nil {
-		return h
-	}
-	return "git-lan-peer"
-}

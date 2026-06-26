@@ -5,20 +5,10 @@
 package security
 
 import (
-	"crypto/rand"
 	"crypto/subtle"
 	"os"
 	"path/filepath"
 )
-
-// RandomBytes returns n cryptographically random bytes.
-func RandomBytes(n int) ([]byte, error) {
-	b := make([]byte, n)
-	if _, err := rand.Read(b); err != nil {
-		return nil, err
-	}
-	return b, nil
-}
 
 // ConstantTimeEqual compares two byte slices without leaking length-position
 // timing. Length mismatch returns false.
