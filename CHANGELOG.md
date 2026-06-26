@@ -3,6 +3,16 @@
 All notable changes to git-lan are documented here. This project adheres to
 [Semantic Versioning](https://semver.org).
 
+## [0.1.1]
+
+### Added
+
+- **Own session shown in `list` and `status`** - a host now sees a `you …
+  hosting "<name>"` row for its own active session. Discovery filters the host
+  out of mDNS results (a host never lists itself), so previously there was no
+  local confirmation that your session was live and advertised. The row is read
+  from the local session store and shows the lock and push-allowed state.
+
 ## [0.1.0]
 
 First release. Zero-config peer-to-peer git collaboration over the LAN.
@@ -31,4 +41,5 @@ First release. Zero-config peer-to-peer git collaboration over the LAN.
 - **Cross-platform** - Linux, macOS (amd64 + arm64), Windows; install scripts and
   a cross-compiling Makefile.
 
+[0.1.1]: https://github.com/matixandr/git-lan/releases/tag/v0.1.1
 [0.1.0]: https://github.com/matixandr/git-lan/releases/tag/v0.1.0

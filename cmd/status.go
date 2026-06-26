@@ -60,6 +60,11 @@ func drawDashboard(out io.Writer, peers []discovery.Peer) {
 	fmt.Fprintln(out, th.Muted.Render("refreshing every "+flagStatusInterval.String()+" - Ctrl+C to exit"))
 	fmt.Fprintln(out)
 
+	if self := activeSession(); self != nil {
+		fmt.Fprintln(out, formatSelfSession(self))
+		fmt.Fprintln(out)
+	}
+
 	if len(peers) == 0 {
 		fmt.Fprintf(out, "%s No peers visible right now.\n", display.Icons.Offline)
 		return

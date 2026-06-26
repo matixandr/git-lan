@@ -6,6 +6,7 @@ import (
 
 	"github.com/matixandr/git-lan/internal/discovery"
 	"github.com/matixandr/git-lan/internal/display"
+	"github.com/matixandr/git-lan/internal/session"
 	"github.com/spf13/cobra"
 )
 
@@ -26,6 +27,9 @@ var listCmd = &cobra.Command{
 
 func renderPeerList(cmd *cobra.Command, peers []discovery.Peer) {
 	out := cmd.OutOrStdout()
+	if self := activeSession(); self != nil {
+		fmt.Fprintln(out, formatSelfSession(self))
+	}
 	if len(peers) == 0 {
 		fmt.Fprintf(out, "%s No peers found on the LAN.\n", display.Icons.Offline)
 		return
@@ -33,6 +37,42 @@ func renderPeerList(cmd *cobra.Command, peers []discovery.Peer) {
 	for _, p := range peers {
 		fmt.Fprintln(out, formatPeerRow(p))
 	}
+}
+
+// activeSession returns this host's live hosted session, or nil if none is
+// running (or the store cannot be read). `list` and `status` filter the host
+// out of mDNS results - a host never sees itself - so reading the local store
+// is the only way to confirm to the operator that their own session is live
+// and advertised on the LAN.
+func activeSession() *session.Session {
+	store, err := session.Load()
+	if err != nil {
+		return nil
+	}
+	return store.Active
+}
+
+// formatSelfSession renders the row for this host's own active session, e.g.
+//
+//	● you              hosting "hackathon" [locked]  (this host)
+func formatSelfSession(s *session.Session) string {
+	th := display.Active
+	name := fmt.Sprintf("%-16s", "you")
+
+	tag := fmt.Sprintf("hosting %q", s.Name)
+	if s.HasPassword() {
+		tag += " " + display.Icons.Lock
+	}
+	if s.AllowPush {
+		tag += " (push allowed)"
+	}
+
+	return fmt.Sprintf("%s %s %s %s",
+		th.Online.Render(display.Icons.Online),
+		th.Bold.Render(name),
+		th.Warning.Render(tag),
+		th.Muted.Render("(this host)"),
+	)
 }
 
 // formatPeerRow renders one peer line, e.g.

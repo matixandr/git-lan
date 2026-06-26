@@ -87,8 +87,8 @@ That's it - there is no step 5.
 
 | Command | What it does |
 | --- | --- |
-| `git lan list` | List peers on the LAN with branch, HEAD, presence. |
-| `git lan status` | Live dashboard, refreshes every 5s (Ctrl+C to exit). |
+| `git lan list` | List peers on the LAN with branch, HEAD, presence. Also shows your own active session (a host is filtered out of its own mDNS results). |
+| `git lan status` | Live dashboard, refreshes every 5s (Ctrl+C to exit). Includes your own active session. |
 | `git lan clone <peer>[/repo] [dir]` | Clone a peer's repo over E2E transport. |
 | `git lan pull <peer>[/repo] [branch]` | Pull from a peer into the current repo. |
 | `git lan push <peer>[/repo] [branch]` | Push to a peer (peer approves). |
