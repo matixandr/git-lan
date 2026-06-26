@@ -1,17 +1,8 @@
-```
- $$$$$$\  $$\   $$\           $$\
-$$  __$$\ \__|  $$ |          $$ |
-$$ /  \__|$$\ $$$$$$\         $$ | $$$$$$\  $$$$$$$\
-$$ |$$$$\ $$ |\_$$  _|$$$$$$\ $$ | \____$$\ $$  __$$\
-$$ |\_$$ |$$ |  $$ |  \______|$$ | $$$$$$$ |$$ |  $$ |
-$$ |  $$ |$$ |  $$ |$$\       $$ |$$  __$$ |$$ |  $$ |
-\$$$$$$  |$$ |  \$$$$  |      $$ |\$$$$$$$ |$$ |  $$ |
- \______/ \__|   \____/       \__| \_______|\__|  \__|
+<p align="center">
+  <img src="assets/image.svg" alt="git-lan" width="480">
+</p>
 
-zero-config p2p git over your LAN
-```
-
-# git-lan
+<h1 align="center">git-lan</h1>
 
 [![Go](https://img.shields.io/badge/Go-1.26-00ADD8?logo=go&logoColor=white)](https://go.dev)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
@@ -276,3 +267,7 @@ name matches what you're touching.
 ## License
 
 MIT © matixandr - see [LICENSE](LICENSE).
+
+---
+
+<sub>Git logo by Jason Long, [CC BY 3.0](https://creativecommons.org/licenses/by/3.0/) ([git-scm.com/downloads/logos](https://git-scm.com/downloads/logos)).</sub>
