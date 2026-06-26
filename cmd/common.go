@@ -2,6 +2,7 @@ package cmd
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"os"
 	"time"
@@ -49,11 +50,32 @@ func clientForPeer(peer discovery.Peer) (*transport.Client, error) {
 	c := &transport.Client{
 		Identity: id.Private(),
 		PeerAddr: addr,
+		Verify:   verifyPinnedPeer(peer.Instance),
 	}
 	if flagVerbose {
 		c.Log = func(format string, args ...any) { fmt.Fprintf(os.Stderr, "[transport] "+format+"\n", args...) }
 	}
 	return c, nil
+}
+
+// verifyPinnedPeer returns a VerifyFunc that checks the peer's presented
+// identity against any pin for hostname. A mismatch aborts loudly (possible
+// MITM); an unknown peer is allowed (trust-on-first-use), and a matching pin
+// passes silently.
+func verifyPinnedPeer(hostname string) transport.VerifyFunc {
+	return func(peerIdentity []byte) error {
+		fp := security.FingerprintOf(peerIdentity)
+		ring, err := security.LoadTrust()
+		if err != nil {
+			return nil // do not block on a trust-store read error
+		}
+		_, err = ring.VerifyHost(hostname, fp)
+		if errors.Is(err, security.ErrFingerprintMismatch) {
+			return fmt.Errorf("%w\n  peer %q presented %s\n  this could be a man-in-the-middle - aborting",
+				err, hostname, fp)
+		}
+		return nil
+	}
 }
 
 // browseFor runs mDNS discovery for d and returns the peers seen. It announces
