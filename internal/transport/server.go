@@ -29,11 +29,13 @@ type Server struct {
 	// Log receives human-readable diagnostics; may be nil.
 	Log func(format string, args ...any)
 
-	// Password gate. When RequireAuth is true, peers must prove knowledge of
-	// the session password (via Seed/Salt) before any git bytes are served.
+	// Access gate. When RequireAuth is true, peers must present a credential -
+	// the password seed (Seed/Salt) or a one-time invite (Invite) - before any
+	// git bytes are served.
 	RequireAuth bool
 	Seed        []byte
 	Salt        []byte
+	Invite      InviteValidator
 
 	ln   net.Listener
 	port int
@@ -110,7 +112,12 @@ func (s *Server) handle(conn net.Conn) {
 			return
 		}
 	}
-	if err := ServerGate(ec, s.RequireAuth, s.Salt, s.Seed); err != nil {
+	if err := ServerGate(ec, ServerGateConfig{
+		RequireAuth: s.RequireAuth,
+		Salt:        s.Salt,
+		Seed:        s.Seed,
+		Invite:      s.Invite,
+	}); err != nil {
 		s.logf("auth from %s: %v", conn.RemoteAddr(), err)
 		return
 	}

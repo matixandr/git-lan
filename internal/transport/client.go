@@ -20,6 +20,8 @@ type Client struct {
 	// DeriveSeed turns a session salt into the password seed for the gate. Nil
 	// when the user supplied no password; a locked session then fails cleanly.
 	DeriveSeed func(salt []byte) []byte
+	// Token, if set, joins via a one-time invite instead of a password.
+	Token string
 	// Log receives diagnostics; may be nil.
 	Log func(format string, args ...any)
 }
@@ -86,7 +88,7 @@ func (c *Client) tunnel(gitConn net.Conn) {
 			return
 		}
 	}
-	if err := ClientGate(ec, c.DeriveSeed); err != nil {
+	if err := ClientGate(ec, ClientGateConfig{Token: c.Token, Derive: c.DeriveSeed}); err != nil {
 		c.logf("session auth failed: %v", err)
 		_ = ec.Close()
 		_ = gitConn.Close()
