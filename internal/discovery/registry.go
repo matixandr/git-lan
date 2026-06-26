@@ -11,7 +11,6 @@ import (
 const (
 	HeartbeatInterval = 60 * time.Second
 	PeerTTL           = 2 * HeartbeatInterval
-	IdleAfter         = 15 * time.Minute
 )
 
 // Registry is a concurrency-safe, in-memory view of currently known peers.
@@ -71,18 +70,22 @@ func (r *Registry) List() []Peer {
 	return out
 }
 
-// PresenceOf derives the live presence of a peer from its advertisement and
-// how long ago it was last seen.
+// PresenceOf derives the live presence of a peer. Reachability is decided
+// locally from LastSeen (a peer past PeerTTL is offline regardless of what it
+// last claimed). Everything else - coding vs idle vs online - is self-reported
+// by the peer, which alone knows its own activity. We fall back to deriving
+// "coding" from the modified-file count if the peer advertised nothing.
 func (r *Registry) PresenceOf(p Peer) Presence {
-	now := r.now()
-	switch {
-	case now.Sub(p.LastSeen) > PeerTTL:
+	if r.now().Sub(p.LastSeen) > PeerTTL {
 		return PresenceOffline
-	case now.Sub(p.LastSeen) > IdleAfter:
-		return PresenceIdle
-	case p.Modified > 0:
-		return PresenceCoding
+	}
+	switch p.Advertised {
+	case PresenceIdle, PresenceCoding, PresenceOnline:
+		return p.Advertised
 	default:
+		if p.Modified > 0 {
+			return PresenceCoding
+		}
 		return PresenceOnline
 	}
 }

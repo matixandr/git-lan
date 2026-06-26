@@ -38,8 +38,16 @@ func TestRegistryPresence(t *testing.T) {
 		t.Errorf("dirty peer presence = %q, want coding", got)
 	}
 
-	clock = clock.Add(IdleAfter + time.Minute)
-	if got := r.PresenceOf(a); got != PresenceIdle {
-		t.Errorf("stale peer presence = %q, want idle", got)
+	// Idle is self-reported by the peer, not inferred from local staleness:
+	// a peer that goes quiet past the TTL reads as offline, not idle.
+	r.Upsert(Peer{Instance: "c", Advertised: PresenceIdle})
+	c, _ := r.Get("c")
+	if got := r.PresenceOf(c); got != PresenceIdle {
+		t.Errorf("advertised-idle peer presence = %q, want idle", got)
+	}
+
+	clock = clock.Add(PeerTTL + time.Minute)
+	if got := r.PresenceOf(a); got != PresenceOffline {
+		t.Errorf("stale peer presence = %q, want offline", got)
 	}
 }

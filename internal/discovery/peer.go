@@ -42,6 +42,9 @@ type Peer struct {
 	Session string
 	// Locked indicates the session is password-protected.
 	Locked bool
+	// Advertised is the presence the peer reports about itself (it knows its
+	// own activity). The registry trusts this unless the peer has gone stale.
+	Advertised Presence
 	// Protocol is the advertised protocol version, e.g. "v1".
 	Protocol string
 
