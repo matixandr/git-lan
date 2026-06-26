@@ -56,6 +56,9 @@ func runSessionCreate(cmd *cobra.Command) error {
 		return err
 	}
 
+	// The store holds the active session; the invite validator closes over it.
+	store := &session.Store{Active: sess}
+
 	// Encrypted transport.
 	srv := transport.NewServer(id.Private(), repo.Root, flagSessionAllow)
 	if flagVerbose {
@@ -77,8 +80,7 @@ func runSessionCreate(cmd *cobra.Command) error {
 	}
 	sess.Port = srv.Port()
 
-	// Persist as the active session.
-	store := &session.Store{Active: sess}
+	// Persist as the active session (now that the port is known).
 	if err := store.Save(); err != nil {
 		return err
 	}
