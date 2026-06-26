@@ -1,0 +1,19 @@
+# Build artifacts
+/bin/
+/dist/
+git-lan
+git-lan.exe
+*.test
+*.out
+
+# Local agent state (never commit)
+.claude
+
+# Editor / OS noise
+.DS_Store
+.idea/
+.vscode/
+*.swp
+
+# Go
+vendor/
