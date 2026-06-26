@@ -53,6 +53,11 @@ func wrap(conn net.Conn, initiator bool) (*EncryptedConn, error) {
 	if err != nil {
 		return nil, err
 	}
+	return fromKeys(conn, keys)
+}
+
+// fromKeys builds an EncryptedConn around already-negotiated directional keys.
+func fromKeys(conn net.Conn, keys *sessionKeys) (*EncryptedConn, error) {
 	sendAEAD, err := chacha20poly1305.New(keys.send)
 	if err != nil {
 		return nil, fmt.Errorf("%w: send cipher: %v", ErrHandshake, err)
