@@ -61,6 +61,13 @@ func runSessionCreate(cmd *cobra.Command) error {
 		srv.Log = func(f string, a ...any) { fmt.Fprintf(os.Stderr, "[server] "+f+"\n", a...) }
 	}
 	srv.Verify = approvePeer(out)
+	if sess.HasPassword() {
+		// Derive the gate seed in-process from the password just supplied; it
+		// is never written to disk.
+		srv.RequireAuth = true
+		srv.Salt = sess.Salt
+		srv.Seed = session.DeriveSeed(flagSessionPassword, sess.Salt)
+	}
 
 	cfg, _ := config.Load()
 	if err := srv.Listen(cfg.Port); err != nil {
