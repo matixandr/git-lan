@@ -202,7 +202,17 @@ detected_at = "2025-04-10T18:25:13"
 
 ## Installation
 
-### From source (any platform)
+### Quick install (any platform)
+
+```console
+go install github.com/matixandr/git-lan@latest
+```
+
+`git` resolves `git lan` to any `git-lan` executable on your `PATH`, so once it's
+installed the subcommand just works. The binary lands in `$(go env GOPATH)/bin` -
+make sure that directory is on your `PATH`. Requires **Go 1.26+**.
+
+### From source
 
 ```console
 git clone https://github.com/matixandr/git-lan
@@ -212,15 +222,6 @@ cd git-lan
 # Windows (PowerShell):
 ./scripts/install.ps1
 ```
-
-Or with the Go toolchain directly:
-
-```console
-go install github.com/matixandr/git-lan@latest
-```
-
-`git` resolves `git lan` to any `git-lan` executable on your `PATH`, so once it's
-installed the subcommand just works.
 
 ### Cross-compiled binaries
 
