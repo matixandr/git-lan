@@ -8,8 +8,53 @@ import (
 
 	"github.com/matixandr/git-lan/internal/discovery"
 	"github.com/matixandr/git-lan/internal/git"
+	"github.com/matixandr/git-lan/internal/security"
+	"github.com/matixandr/git-lan/internal/transport"
 	"github.com/matixandr/git-lan/pkg/config"
 )
+
+// resolvePeer parses a "peer/repo" reference, browses for the peer, and returns
+// it along with the repo name to request (defaulting to the peer's advertised
+// repo when omitted).
+func resolvePeer(ref string, d time.Duration) (discovery.Peer, string, error) {
+	target, err := transport.ParseTarget(ref)
+	if err != nil {
+		return discovery.Peer{}, "", err
+	}
+	peer, err := findPeer(target.Peer, d)
+	if err != nil {
+		return discovery.Peer{}, "", err
+	}
+	repo := target.Repo
+	if repo == "" {
+		repo = peer.Repo
+	}
+	if repo == "" {
+		return discovery.Peer{}, "", fmt.Errorf("peer %q is not advertising a repo; specify peer/repo", target.Peer)
+	}
+	return peer, repo, nil
+}
+
+// clientForPeer builds an encrypted transport client aimed at a peer, using
+// this host's long-term identity.
+func clientForPeer(peer discovery.Peer) (*transport.Client, error) {
+	id, err := security.LoadOrCreateIdentity()
+	if err != nil {
+		return nil, err
+	}
+	addr, err := peer.Addr()
+	if err != nil {
+		return nil, err
+	}
+	c := &transport.Client{
+		Identity: id.Private(),
+		PeerAddr: addr,
+	}
+	if flagVerbose {
+		c.Log = func(format string, args ...any) { fmt.Fprintf(os.Stderr, "[transport] "+format+"\n", args...) }
+	}
+	return c, nil
+}
 
 // browseFor runs mDNS discovery for d and returns the peers seen. It announces
 // nothing - it is a pure listen, used by `list` and one-shot lookups.
