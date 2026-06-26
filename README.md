@@ -1,5 +1,5 @@
 <p align="center">
-  <img src="assets/image.svg" alt="git-lan" width="480">
+  <img src="assets/image.svg" alt="git-lan" width="560">
 </p>
 
 <h1 align="center">git-lan</h1>
@@ -268,6 +268,4 @@ name matches what you're touching.
 
 MIT © matixandr - see [LICENSE](LICENSE).
 
----
-
-<sub>Git logo by Jason Long, [CC BY 3.0](https://creativecommons.org/licenses/by/3.0/) ([git-scm.com/downloads/logos](https://git-scm.com/downloads/logos)).</sub>
+Git logo by Jason Long, licensed under [CC BY 3.0](https://creativecommons.org/licenses/by/3.0/) ([git-scm.com/downloads/logos](https://git-scm.com/downloads/logos)).
